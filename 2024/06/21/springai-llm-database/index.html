@@ -1,0 +1,312 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>使用Spring AI 和 LLM 实现数据库查询 | 总攻杨零壹</title><meta name="author" content="总攻杨零壹"><meta name="copyright" content="总攻杨零壹"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="使用Spring AI 和 LLM 实现数据库查询AIDocumentLibraryChat 项目已扩展为支持提问来搜索关系数据库。用户可以输入一个问题，然后嵌入搜索相关的数据库表和列来回答问题。然后，LLM 获取相关表的数据库架构，并根据找到的表和列生成一个 SQL 查询，来展示结果回答问题。 数据集和元数据使用的开源数据集有 6 个表，彼此之间有关系。它包含有关博物馆和艺术品的数据。为了获得有">
+<meta property="og:type" content="article">
+<meta property="og:title" content="使用Spring AI 和 LLM 实现数据库查询">
+<meta property="og:url" content="https://yangyulely.github.io/2024/06/21/springai-llm-database/index.html">
+<meta property="og:site_name" content="总攻杨零壹">
+<meta property="og:description" content="使用Spring AI 和 LLM 实现数据库查询AIDocumentLibraryChat 项目已扩展为支持提问来搜索关系数据库。用户可以输入一个问题，然后嵌入搜索相关的数据库表和列来回答问题。然后，LLM 获取相关表的数据库架构，并根据找到的表和列生成一个 SQL 查询，来展示结果回答问题。 数据集和元数据使用的开源数据集有 6 个表，彼此之间有关系。它包含有关博物馆和艺术品的数据。为了获得有">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://yangyulely.github.io/img/spring-ai.jpg">
+<meta property="article:published_time" content="2024-06-21T15:43:21.000Z">
+<meta property="article:modified_time" content="2024-06-22T00:27:38.393Z">
+<meta property="article:author" content="总攻杨零壹">
+<meta property="article:tag" content="Java">
+<meta property="article:tag" content="LLM">
+<meta property="article:tag" content="数据库">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://yangyulely.github.io/img/spring-ai.jpg"><link rel="shortcut icon" href="/img/my-favi.png"><link rel="canonical" href="https://yangyulely.github.io/2024/06/21/springai-llm-database/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//hm.baidu.com"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css?v=4.14.0-b3"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0.35/dist/fancybox/fancybox.min.css" media="print" onload="this.media='all'"><script>(()=>{
+      const saveToLocal = {
+        set: (key, value, ttl) => {
+          if (ttl === 0) return
+          const now = Date.now()
+          const expiry = now + ttl * 86400000
+          const item = {
+            value,
+            expiry
+          }
+          localStorage.setItem(key, JSON.stringify(item))
+        },
+      
+        get: key => {
+          const itemStr = localStorage.getItem(key)
+      
+          if (!itemStr) {
+            return undefined
+          }
+          const item = JSON.parse(itemStr)
+          const now = Date.now()
+      
+          if (now > item.expiry) {
+            localStorage.removeItem(key)
+            return undefined
+          }
+          return item.value
+        }
+      }
+      
+      window.btf = {
+        saveToLocal: saveToLocal,
+        getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+          const script = document.createElement('script')
+          script.src = url
+          script.async = true
+          script.onerror = reject
+          script.onload = script.onreadystatechange = function() {
+            const loadState = this.readyState
+            if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+            script.onload = script.onreadystatechange = null
+            resolve()
+          }
+
+          Object.keys(attr).forEach(key => {
+            script.setAttribute(key, attr[key])
+          })
+
+          document.head.appendChild(script)
+        }),
+
+        getCSS: (url, id = false) => new Promise((resolve, reject) => {
+          const link = document.createElement('link')
+          link.rel = 'stylesheet'
+          link.href = url
+          if (id) link.id = id
+          link.onerror = reject
+          link.onload = link.onreadystatechange = function() {
+            const loadState = this.readyState
+            if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+            link.onload = link.onreadystatechange = null
+            resolve()
+          }
+          document.head.appendChild(link)
+        }),
+
+        addGlobalFn: (key, fn, name = false, parent = window) => {
+          const pjaxEnable = false
+          if (!pjaxEnable && key.startsWith('pjax')) return
+
+          const globalFn = parent.globalFn || {}
+          const keyObj = globalFn[key] || {}
+    
+          if (name && keyObj[name]) return
+    
+          name = name || Object.keys(keyObj).length
+          keyObj[name] = fn
+          globalFn[key] = keyObj
+          parent.globalFn = globalFn
+        }
+      }
+    
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+      
+      const t = saveToLocal.get('theme')
+    
+        if (t === 'dark') activateDarkMode()
+        else if (t === 'light') activateLightMode()
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+      const detectApple = () => {
+        if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+          document.documentElement.classList.add('apple')
+        }
+      }
+      detectApple()
+    })()</script><script>var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?<script> var _hmt = _hmt || []; (function() { var hm = document.createElement("script"); hm.src = "https://hm.baidu.com/hm.js?281c76dc152bb129b59313d2ee3427dd"; var s = document.getElementsByTagName("script")[0]; s.parentNode.insertBefore(hm, s); })(); </script>";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+btf.addGlobalFn('pjaxComplete', () => {
+  _hmt.push(['_trackPageview',window.location.pathname])
+}, 'baidu_analytics')
+</script><link rel="stylesheet" href="/%E6%9D%A8%E9%9B%B6%E5%A3%B9%E7%9A%84%E5%8D%9A%E5%AE%A2" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.xml","preload":false,"top_n_per_article":1,"unescape":false,"languages":{"hits_empty":"找不到您查询的内容：${query}","hits_stats":"共找到 ${hits} 篇文章"}},
+  translate: {"defaultEncoding":2,"translateDelay":0,"msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"簡"},
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":true,"highlightMacStyle":true},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'fancybox',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid@4.11.1/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyload: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: '使用Spring AI 和 LLM 实现数据库查询',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2024-06-22 08:27:38'
+}</script><meta name="generator" content="Hexo 7.2.0"></head><body><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src="/img/me.jpg" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="sidebar-site-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">4</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">9</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">3</div></a></div><hr class="custom-hr"/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 主页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 归档</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fas fa-list"></i><span> 娱乐</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/music/"><i class="fa-fw fas fa-music"></i><span> 音乐</span></a></li><li><a class="site-page child" href="/movies/"><i class="fa-fw fas fa-video"></i><span> 电影</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友情链接</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于我</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url('/img/spring-ai.jpg')"><nav id="nav"><span id="blog-info"><a href="/" title="总攻杨零壹"><span class="site-name">总攻杨零壹</span></a></span><div id="menus"><div id="search-button"><span class="site-page social-icon search"><i class="fas fa-search fa-fw"></i><span> 搜索</span></span></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 主页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 归档</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fas fa-list"></i><span> 娱乐</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/music/"><i class="fa-fw fas fa-music"></i><span> 音乐</span></a></li><li><a class="site-page child" href="/movies/"><i class="fa-fw fas fa-video"></i><span> 电影</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友情链接</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于我</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">使用Spring AI 和 LLM 实现数据库查询</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2024-06-21T15:43:21.000Z" title="发表于 2024-06-21 23:43:21">2024-06-21</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2024-06-22T00:27:38.393Z" title="更新于 2024-06-22 08:27:38">2024-06-22</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/Java/">Java</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title="使用Spring AI 和 LLM 实现数据库查询"><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">阅读量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><h1 id="使用Spring-AI-和-LLM-实现数据库查询"><a href="#使用Spring-AI-和-LLM-实现数据库查询" class="headerlink" title="使用Spring AI 和 LLM 实现数据库查询"></a>使用Spring AI 和 LLM 实现数据库查询</h1><p><a target="_blank" rel="noopener" href="https://github.com/Angular2Guy/AIDocumentLibraryChat/tree/master" title="AIDocumentLibraryChat">AIDocumentLibraryChat</a> 项目已扩展为支持提问来搜索<a target="_blank" rel="noopener" href="https://so.csdn.net/so/search?q=%E5%85%B3%E7%B3%BB%E6%95%B0%E6%8D%AE%E5%BA%93&spm=1001.2101.3001.7020">关系数据库</a>。用户可以输入一个问题，然后嵌入搜索相关的数据库表和列来回答问题。然后，LLM 获取相关表的数据库架构，并根据找到的表和列生成一个 SQL 查询，来展示结果回答问题。</p>
+<h3 id="数据集和元数据"><a href="#数据集和元数据" class="headerlink" title="数据集和元数据"></a>数据集和元数据</h3><p>使用的开源数据集有 6 个表，彼此之间有关系。它包含有关博物馆和艺术品的数据。为了获得有用的问题查询，必须为数据集提供元数据，并且必须在嵌入中转换元数据。</p>
+<p><img src="/img/spring-ai/metadata.png" alt="数据集和元数据">​</p>
+<p>为了使 LLM 能够找到所需的表和列，它需要知道它们的名称和描述。对于像 museum 表这样的所有数据表，元数据都存储在 column_metadata 和 table_metadata 表中。它们的数据可以在以下文件中找到: <a target="_blank" rel="noopener" href="https://github.com/Angular2Guy/AIDocumentLibraryChat/blob/master/backend/src/main/resources/dbchangelog/data/column_metadata.csv" title="column_metadata.csv">column_metadata.csv</a> 和 <a target="_blank" rel="noopener" href="https://github.com/Angular2Guy/AIDocumentLibraryChat/blob/master/backend/src/main/resources/dbchangelog/data/table_metadata.csv" title="table_metadata.csv">table_metadata.csv</a>。它们包含表或列的唯一 ID、名称、描述等。该描述用于创建与问题嵌入进行比较的嵌入。描述的质量对结果有很大的影响，因为更好的描述会使嵌入更精确。提供同义词是提高质量的一种选择。表元数据包含表的模式，以便仅向 LLM 提示符添加相关的表模式。</p>
+<h3 id="嵌入"><a href="#嵌入" class="headerlink" title="嵌入"></a>嵌入</h3><p>为了在 Postgresql 中存储嵌入，使用了向量扩展。可以使用 OpenAI 端点或 <a target="_blank" rel="noopener" href="https://docs.spring.io/spring-ai/reference/" title="Spring AI">Spring AI</a> 提供的 ONNX 库创建嵌入。创建了三种类型的嵌入：</p>
+<ul>
+<li><code>Tabledescription</code>嵌入</li>
+<li><code>Columndescription</code>嵌入</li>
+<li><code>Rowcolumn</code>嵌入</li>
+</ul>
+<p><code>Tabledescription</code> 嵌入有一个基于表描述的向量，嵌入有 tablename、datatype &#x3D; table 和元数据中的元数据 id。<br><code>Columndescription</code> 嵌入有一个基于列描述的向量，嵌入有表名、带列名的数据名、datatype &#x3D; column 和元数据中的元数据 id。</p>
+<p><code>Rowcolumn</code> 嵌入有一个基于内容行列值的向量。用于美术作品的样式或主题，以便能够使用问题中的值。元数据具有datatype &#x3D; row、作为 dataname 的列名、表名和元数据 id。</p>
+<h3 id="实现搜索"><a href="#实现搜索" class="headerlink" title="实现搜索"></a>实现搜索</h3><p>搜索有 3 个步骤：</p>
+<ol>
+<li>检索嵌入</li>
+<li>创建提示</li>
+<li>执行查询并返回结果</li>
+</ol>
+<h4 id="检索嵌入"><a href="#检索嵌入" class="headerlink" title="检索嵌入"></a>检索嵌入</h4><p>为了从具有向量扩展的 Postgresql 数据库中读取嵌入，Spring AI 使用 <a target="_blank" rel="noopener" href="https://github.com/Angular2Guy/AIDocumentLibraryChat/blob/master/backend/src/main/java/ch/xxx/aidoclibchat/adapter/repository/DocumentVSRepositoryBean.java" title="DocumentVSRepositoryBean">DocumentVSRepositoryBean</a> 中的 VectorStore 类：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> List&lt;Document&gt; <span class="title function_">retrieve</span><span class="params">(String query, DataType dataType)</span> &#123;</span><br><span class="line">  <span class="keyword">return</span> <span class="built_in">this</span>.vectorStore.similaritySearch(</span><br><span class="line">    SearchRequest.query(query).withFilterExpression(</span><br><span class="line">      <span class="keyword">new</span> <span class="title class_">Filter</span>.Expression(ExpressionType.EQ,</span><br><span class="line">      <span class="keyword">new</span> <span class="title class_">Key</span>(MetaData.DATATYPE), <span class="keyword">new</span> <span class="title class_">Value</span>(dataType.toString()))));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>VectorStore 为用户的<a target="_blank" rel="noopener" href="https://so.csdn.net/so/search?q=%E6%9F%A5%E8%AF%A2&spm=1001.2101.3001.7020">查询</a>提供相似性搜索。查询在嵌入中转换，并在头值中使用用于数据类型的FilterExpression 返回结果。</p>
+<p> <a target="_blank" rel="noopener" href="https://github.com/Angular2Guy/AIDocumentLibraryChat/blob/master/backend/src/main/java/ch/xxx/aidoclibchat/usecase/service/TableService.java" title="TableService">TableService</a> 类在 retrieveEmbeddings 方法中使用存储库:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> EmbeddingContainer <span class="title function_">retrieveEmbeddings</span><span class="params">(SearchDto searchDto)</span> &#123;</span><br><span class="line">  <span class="type">var</span> <span class="variable">tableDocuments</span> <span class="operator">=</span> <span class="built_in">this</span>.documentVsRepository.retrieve(</span><br><span class="line">    searchDto.getSearchString(), MetaData.DataType.TABLE, </span><br><span class="line">    searchDto.getResultAmount());</span><br><span class="line">  <span class="type">var</span> <span class="variable">columnDocuments</span> <span class="operator">=</span> <span class="built_in">this</span>.documentVsRepository.retrieve(</span><br><span class="line">    searchDto.getSearchString(), MetaData.DataType.COLUMN,</span><br><span class="line">    searchDto.getResultAmount());</span><br><span class="line">  List&lt;String&gt; rowSearchStrs = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;&gt;();</span><br><span class="line">  <span class="keyword">if</span>(searchDto.getSearchString().split(<span class="string">&quot;[ -.;,]&quot;</span>).length &gt; <span class="number">5</span>) &#123;</span><br><span class="line">    <span class="type">var</span> <span class="variable">tokens</span> <span class="operator">=</span> List.of(searchDto.getSearchString()</span><br><span class="line">      .split(<span class="string">&quot;[ -.;,]&quot;</span>));		</span><br><span class="line">    <span class="keyword">for</span>(<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>;i&lt;tokens.size();i = i+<span class="number">3</span>) &#123;</span><br><span class="line">      rowSearchStrs.add(tokens.size() &lt;= i + <span class="number">3</span> ? <span class="string">&quot;&quot;</span> : </span><br><span class="line">        tokens.subList(i, tokens.size() &gt;= i +<span class="number">6</span> ? i+<span class="number">6</span> :      </span><br><span class="line">        tokens.size()).stream().collect(Collectors.joining(<span class="string">&quot; &quot;</span>)));</span><br><span class="line">     &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="type">var</span> <span class="variable">rowDocuments</span> <span class="operator">=</span> rowSearchStrs.stream().filter(myStr -&gt; !myStr.isBlank())  </span><br><span class="line">    .flatMap(myStr -&gt; <span class="built_in">this</span>.documentVsRepository.retrieve(myStr, </span><br><span class="line">       MetaData.DataType.ROW, searchDto.getResultAmount()).stream())</span><br><span class="line">    .toList();</span><br><span class="line">  <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">EmbeddingContainer</span>(tableDocuments, columnDocuments, </span><br><span class="line">    rowDocuments);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>首先，documentVsRepository 用于根据用户的搜索字符串检索带有表&#x2F;列嵌入的文档。然后，将搜索字符串分成6个单词的块，以搜索具有行嵌入的文档。行嵌入只是一个单词，为了获得低距离，查询字符串必须很短;否则，由于查询中的所有其他单词，距离会增加。然后使用块来检索带有嵌入的行文档。</p>
+<h4 id="创建提示词"><a href="#创建提示词" class="headerlink" title="创建提示词"></a>创建提示词</h4><p>提示词是通过 createPrompt 方法在 TablesService 类中创建的:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> Prompt <span class="title function_">createPrompt</span><span class="params">(SearchDto searchDto, </span></span><br><span class="line"><span class="params">  EmbeddingContainer documentContainer)</span> &#123;</span><br><span class="line">  <span class="keyword">final</span> <span class="type">Float</span> <span class="variable">minRowDistance</span> <span class="operator">=</span> documentContainer.rowDocuments().stream()</span><br><span class="line">    .map(myDoc -&gt; (Float) myDoc.getMetadata().getOrDefault(MetaData.DISTANCE,  </span><br><span class="line">      <span class="number">1.0f</span>)).sorted().findFirst().orElse(<span class="number">1.0f</span>);</span><br><span class="line">  LOGGER.info(<span class="string">&quot;MinRowDistance: &#123;&#125;&quot;</span>, minRowDistance);</span><br><span class="line">  <span class="type">var</span> <span class="variable">sortedRowDocs</span> <span class="operator">=</span> documentContainer.rowDocuments().stream()</span><br><span class="line">    .sorted(<span class="built_in">this</span>.compareDistance()).toList();</span><br><span class="line">  <span class="type">var</span> <span class="variable">tableColumnNames</span> <span class="operator">=</span> <span class="built_in">this</span>.createTableColumnNames(documentContainer);</span><br><span class="line">  List&lt;TableNameSchema&gt; tableRecords = <span class="built_in">this</span>.tableMetadataRepository</span><br><span class="line">    .findByTableNameIn(tableColumnNames.tableNames()).stream()</span><br><span class="line">      .map(tableMetaData -&gt; <span class="keyword">new</span> <span class="title class_">TableNameSchema</span>(tableMetaData.getTableName(), </span><br><span class="line">        tableMetaData.getTableDdl())).collect(Collectors.toList());</span><br><span class="line">  <span class="keyword">final</span> AtomicReference&lt;String&gt; joinColumn = <span class="keyword">new</span> <span class="title class_">AtomicReference</span>&lt;String&gt;(<span class="string">&quot;&quot;</span>);</span><br><span class="line">  <span class="keyword">final</span> AtomicReference&lt;String&gt; joinTable = <span class="keyword">new</span> <span class="title class_">AtomicReference</span>&lt;String&gt;(<span class="string">&quot;&quot;</span>);</span><br><span class="line">  <span class="keyword">final</span> AtomicReference&lt;String&gt; columnValue = </span><br><span class="line">    <span class="keyword">new</span> <span class="title class_">AtomicReference</span>&lt;String&gt;(<span class="string">&quot;&quot;</span>);</span><br><span class="line">  sortedRowDocs.stream().filter(myDoc -&gt; minRowDistance &lt;= MAX_ROW_DISTANCE)</span><br><span class="line">    .filter(myRowDoc -&gt; tableRecords.stream().filter(myRecord -&gt;  </span><br><span class="line">      myRecord.name().equals(myRowDoc.getMetadata()</span><br><span class="line">        .get(MetaData.TABLE_NAME))).findFirst().isEmpty())</span><br><span class="line">    .findFirst().ifPresent(myRowDoc -&gt; &#123;</span><br><span class="line">      joinTable.set(((String) myRowDoc.getMetadata()</span><br><span class="line">        .get(MetaData.TABLE_NAME)));</span><br><span class="line">      joinColumn.set(((String) myRowDoc.getMetadata()</span><br><span class="line">        .get(MetaData.DATANAME)));</span><br><span class="line">      tableColumnNames.columnNames().add(((String) myRowDoc.getMetadata()</span><br><span class="line">        .get(MetaData.DATANAME)));</span><br><span class="line">      columnValue.set(myRowDoc.getContent());</span><br><span class="line">      <span class="built_in">this</span>.tableMetadataRepository.findByTableNameIn(</span><br><span class="line">        List.of(((String) myRowDoc.getMetadata().get(MetaData.TABLE_NAME))))</span><br><span class="line">          .stream().map(myTableMetadata -&gt; <span class="keyword">new</span> <span class="title class_">TableNameSchema</span>(</span><br><span class="line">            myTableMetadata.getTableName(),</span><br><span class="line">            myTableMetadata.getTableDdl())).findFirst()</span><br><span class="line">         .ifPresent(myRecord -&gt; tableRecords.add(myRecord));</span><br><span class="line">  &#125;);</span><br><span class="line">  <span class="type">var</span> <span class="variable">messages</span> <span class="operator">=</span> createMessages(searchDto, minRowDistance, tableColumnNames, </span><br><span class="line">    tableRecords, joinColumn, joinTable, columnValue);</span><br><span class="line">  <span class="type">Prompt</span> <span class="variable">prompt</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Prompt</span>(messages);</span><br><span class="line">  <span class="keyword">return</span> prompt;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>首先，过滤掉 rowDocuments 的最小距离。然后创建一个按距离排序的文档列表行。<br>方法 createTableColumnNames(…) 创建包含一组列名和一个表名列表的 tableColumnNames 记录。tableColumnNames 记录是通过首先筛选距离最小的 3 个表来创建的。然后过滤掉这些表中距离最小的列。</p>
+<p>然后通过使用 <a target="_blank" rel="noopener" href="https://github.com/Angular2Guy/AIDocumentLibraryChat/blob/master/backend/src/main/java/ch/xxx/aidoclibchat/adapter/repository/TableMetadataRepositoryBean.java" title="TableMetadataRepository">TableMetadataRepository</a> 将表名映射到模式 DDL 字符串来创建表记录。</p>
+<p>然后对已排序的行文档进行 MAX_ROW_DISTANCE 过滤，并设置 joinColumn、joinTable 和columnValue 值。然后使用 <code>TableMetadataRepository</code> 创建 <code>TableNameSchema</code> 并将其添加到tableRecords 中。</p>
+<p>现在可以设置 systemPrompt 中的占位符和可选的 columnMatch:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> <span class="type">String</span> <span class="variable">systemPrompt</span> <span class="operator">=</span> <span class="string">&quot;&quot;&quot; </span></span><br><span class="line"><span class="string">...</span></span><br><span class="line"><span class="string">Include these columns in the query: &#123;columns&#125; \n</span></span><br><span class="line"><span class="string">Only use the following tables: &#123;schemas&#125;;\n</span></span><br><span class="line"><span class="string">%s \n</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span>;</span><br><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> <span class="type">String</span> <span class="variable">columnMatch</span> <span class="operator">=</span> <span class="string">&quot;&quot;&quot; </span></span><br><span class="line"><span class="string">Join this column: &#123;joinColumn&#125; of this table: &#123;joinTable&#125; where the column has this value: &#123;columnValue&#125;\n</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span>;</span><br></pre></td></tr></table></figure>
+
+<p>方法 createMessages(…) 获取用来替换 {columns} 占位符的列集。它获取 tableRecords，用表的 ddl 替换 {schemas} 占位符。如果行距离低于阈值，则在字符串占位符%s处添加属性columnMatch。然后替换占位符 {joinColumn}、{joinTable} 和 {columnValue}。</p>
+<p>有了关于所需列的信息、包含这些列的表的模式和行匹配的可选连接的信息，LLM 就能够创建一个合理的 <a target="_blank" rel="noopener" href="https://so.csdn.net/so/search?q=SQL&spm=1001.2101.3001.7020">SQL</a> 查询。</p>
+<h4 id="执行查询并返回结果"><a href="#执行查询并返回结果" class="headerlink" title="执行查询并返回结果"></a>执行查询并返回结果</h4><p>查询在以下方法 <code>createQuery(...)</code> 中执行：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> SqlRowSet <span class="title function_">searchTables</span><span class="params">(SearchDto searchDto)</span> &#123;</span><br><span class="line">  <span class="type">EmbeddingContainer</span> <span class="variable">documentContainer</span> <span class="operator">=</span> <span class="built_in">this</span>.retrieveEmbeddings(searchDto);</span><br><span class="line">  <span class="type">Prompt</span> <span class="variable">prompt</span> <span class="operator">=</span> createPrompt(searchDto, documentContainer);</span><br><span class="line">  <span class="type">String</span> <span class="variable">sqlQuery</span> <span class="operator">=</span> createQuery(prompt);</span><br><span class="line">  LOGGER.info(<span class="string">&quot;Sql query: &#123;&#125;&quot;</span>, sqlQuery);</span><br><span class="line">  <span class="type">SqlRowSet</span> <span class="variable">rowSet</span> <span class="operator">=</span> <span class="built_in">this</span>.jdbcTemplate.queryForRowSet(sqlQuery);</span><br><span class="line">  <span class="keyword">return</span> rowSet;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>首先，调用准备数据和创建 SQL 查询的方法，然后使用 queryForRowSet(…) 在数据库上执行查询。返回 SqlRowSet。<br><a target="_blank" rel="noopener" href="https://github.com/Angular2Guy/AIDocumentLibraryChat/blob/master/backend/src/main/java/ch/xxx/aidoclibchat/usecase/mapping/TableMapper.java" title="TableMapper">TableMapper</a> 类使用 map(…) 方法将结果转换为 TableSearchDto 类:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> TableSearchDto <span class="title function_">map</span><span class="params">(SqlRowSet rowSet, String question)</span> &#123;</span><br><span class="line">  List&lt;Map&lt;String, String&gt;&gt; result = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;&gt;();</span><br><span class="line">  <span class="keyword">while</span> (rowSet.next()) &#123;</span><br><span class="line">    <span class="keyword">final</span> <span class="type">AtomicInteger</span> <span class="variable">atomicIndex</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">AtomicInteger</span>(<span class="number">1</span>);</span><br><span class="line">    Map&lt;String, String&gt; myRow = List.of(rowSet</span><br><span class="line">      .getMetaData().getColumnNames()).stream()</span><br><span class="line">      .map(myCol -&gt; Map.entry(</span><br><span class="line">        <span class="built_in">this</span>.createPropertyName(myCol, rowSet, atomicIndex),</span><br><span class="line">          Optional.ofNullable(rowSet.getObject(</span><br><span class="line">            atomicIndex.get()))</span><br><span class="line">          .map(myOb -&gt; myOb.toString()).orElse(<span class="string">&quot;&quot;</span>)))</span><br><span class="line">      .peek(x -&gt; atomicIndex.set(atomicIndex.get() + <span class="number">1</span>))</span><br><span class="line">      .collect(Collectors.toMap(myEntry -&gt; myEntry.getKey(), </span><br><span class="line">        myEntry -&gt; myEntry.getValue()));</span><br><span class="line">    result.add(myRow);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">TableSearchDto</span>(question, result, <span class="number">100</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>首先，创建结果映射的结果列表。然后，对每行迭代 rowSet，以创建列名作为键、列值作为值的映射。这样可以灵活地返回列的数量及其结果。createPropertyName(…) 将索引整数添加到映射键中，以支持重复的键名。</p>
+<h3 id="展示"><a href="#展示" class="headerlink" title="展示"></a>展示</h3><h4 id="后端"><a href="#后端" class="headerlink" title="后端"></a>后端</h4><p>Spring AI 非常支持创建具有灵活占位符数量的提示。创建嵌入和查询向量表也得到了很好的支持。</p>
+<p>获取合理的查询结果需要必须为列和表提供的元数据。创建良好的元数据是一项随列和表的数量线性扩展的工作。为需要它们的列实现嵌入是一项额外的工作。</p>
+<p>结果是，像 OpenAI 或 Ollama 这样具有“<a target="_blank" rel="noopener" href="https://ollama.com/library/sqlcoder" title="sqlcoder：70b-alpha-q6_K">sqlcoder：70b-alpha-q6_K</a>”模型的 LLM 可以回答以下问题：“显示艺术品名称和具有现实主义风格和肖像主题的博物馆名称。</p>
+<p>LLM 可以在边界内回答与元数据有一定契合度的自然语言问题。对于一个免费的 OpenAI 帐户来说，所需的嵌入量太大了，而“sqlcoder：70b-alpha-q6_K”是最小的模型，结果合理。</p>
+<p>LLM 提供了一种与关系数据库交互的新方法。在开始为数据库提供自然语言接口的项目之前，必须考虑工作量和预期结果。</p>
+<p>LLM 可以帮助解决中小型复杂度的问题，用户应该对数据库有一定的了解。</p>
+<h4 id="前端"><a href="#前端" class="headerlink" title="前端"></a>前端</h4><p>后端返回的结果是以键为列名和值为列值的映射列表。返回的映射条目的数量是未知的，因此显示结果的表必须支持灵活数量的列。示例 JSON 结果如下所示：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span><span class="attr">&quot;question&quot;</span><span class="punctuation">:</span><span class="string">&quot;...&quot;</span><span class="punctuation">,</span><span class="attr">&quot;resultList&quot;</span><span class="punctuation">:</span><span class="punctuation">[</span><span class="punctuation">&#123;</span><span class="attr">&quot;1_name&quot;</span><span class="punctuation">:</span><span class="string">&quot;Portrait of Margaret in Skating Costume&quot;</span><span class="punctuation">,</span><span class="attr">&quot;2_name&quot;</span><span class="punctuation">:</span><span class="string">&quot;Philadelphia Museum of Art&quot;</span><span class="punctuation">&#125;</span><span class="punctuation">,</span><span class="punctuation">&#123;</span><span class="attr">&quot;1_name&quot;</span><span class="punctuation">:</span><span class="string">&quot;Portrait of Mary Adeline Williams&quot;</span><span class="punctuation">,</span><span class="attr">&quot;2_name&quot;</span><span class="punctuation">:</span><span class="string">&quot;Philadelphia Museum of Art&quot;</span><span class="punctuation">&#125;</span><span class="punctuation">,</span><span class="punctuation">&#123;</span><span class="attr">&quot;1_name&quot;</span><span class="punctuation">:</span><span class="string">&quot;Portrait of a Little Girl&quot;</span><span class="punctuation">,</span><span class="attr">&quot;2_name&quot;</span><span class="punctuation">:</span><span class="string">&quot;Philadelphia Museum of Art&quot;</span><span class="punctuation">&#125;</span><span class="punctuation">]</span><span class="punctuation">,</span><span class="attr">&quot;resultAmount&quot;</span><span class="punctuation">:</span><span class="number">100</span><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>resultList 属性包含一个带有属性键和值的 JavaScript 对象数组。为了能够在 Angular Material Table 组件中显示列名和值，使用了这些属性:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">protected</span> columnData: Map&lt;string, string&gt;[] = [];</span><br><span class="line"><span class="type">protected</span> <span class="variable">columnNames</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Set</span>&lt;string&gt;();</span><br></pre></td></tr></table></figure>
+
+<p> <a target="_blank" rel="noopener" href="https://github.com/Angular2Guy/AIDocumentLibraryChat/blob/master/frontend/src/angular/src/app/table-search/table-search.component.ts" title="table-search.component.ts">table-search.component.ts</a> 的 getColumnNames(…) 方法用于在属性中转换JSON结果:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="title function_">getColumnNames</span><span class="params">(tableSearch: TableSearch)</span>: Set&lt;string&gt; &#123;</span><br><span class="line">  <span class="type">const</span> <span class="variable">result</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Set</span>&lt;string&gt;();</span><br><span class="line">  <span class="built_in">this</span>.columnData = [];</span><br><span class="line">  <span class="type">const</span> <span class="variable">myList</span> <span class="operator">=</span> !tableSearch?.resultList ? [] : tableSearch.resultList;</span><br><span class="line">  myList.forEach((value) =&gt; &#123;</span><br><span class="line">    <span class="type">const</span> <span class="variable">myMap</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Map</span>&lt;string, string&gt;();</span><br><span class="line">    Object.entries(value).forEach((entry) =&gt; &#123;</span><br><span class="line">      result.add(entry[<span class="number">0</span>]);</span><br><span class="line">      myMap.set(entry[<span class="number">0</span>], entry[<span class="number">1</span>]);</span><br><span class="line">    &#125;);</span><br><span class="line">    <span class="built_in">this</span>.columnData.push(myMap);</span><br><span class="line">  &#125;);</span><br><span class="line">  <span class="keyword">return</span> result;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>首先，创建结果集，并将 columnData 属性设置为空数组。然后，创建 myList 并使用 forEach(…)迭代。对于 resultList 中的每个对象，将创建一个新的 Map。对于对象的每个属性，将创建一个新条目，以属性名作为键，以属性值作为值。在columnData 映射上设置条目，并将属性名称添加到结果集中。将完成的映射推入 columnData 数组，返回结果并设置为 columnNames 属性。</p>
+<p>然后在 columnNames 集中可以得到一组列名，在 columnData 中可以得到一个从列名到列值的映射。</p>
+<p>模板 <a target="_blank" rel="noopener" href="https://github.com/Angular2Guy/AIDocumentLibraryChat/blob/master/frontend/src/angular/src/app/table-search/table-search.component.html" title="table-search.component.html">table-search.component.html</a> 包含 material 表：</p>
+<figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">@if(searchResult &amp;&amp; searchResult.resultList?.length) &#123;</span><br><span class="line"><span class="tag">&lt;<span class="name">table</span> <span class="attr">mat-table</span> [<span class="attr">dataSource</span>]=<span class="string">&quot;columnData&quot;</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">ng-container</span> *<span class="attr">ngFor</span>=<span class="string">&quot;let disCol of columnNames&quot;</span> </span></span><br><span class="line"><span class="tag">    <span class="attr">matColumnDef</span>=<span class="string">&quot;&#123;&#123; disCol &#125;&#125;&quot;</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">th</span> <span class="attr">mat-header-cell</span> *<span class="attr">matHeaderCellDef</span>&gt;</span>&#123;&#123; disCol &#125;&#125;<span class="tag">&lt;/<span class="name">th</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">td</span> <span class="attr">mat-cell</span> *<span class="attr">matCellDef</span>=<span class="string">&quot;let element&quot;</span>&gt;</span>&#123;&#123; element.get(disCol) &#125;&#125;<span class="tag">&lt;/<span class="name">td</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">ng-container</span>&gt;</span></span><br><span class="line"> </span><br><span class="line">  <span class="tag">&lt;<span class="name">tr</span> <span class="attr">mat-header-row</span> *<span class="attr">matHeaderRowDef</span>=<span class="string">&quot;columnNames&quot;</span>&gt;</span><span class="tag">&lt;/<span class="name">tr</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">tr</span> <span class="attr">mat-row</span> *<span class="attr">matRowDef</span>=<span class="string">&quot;let row; columns: columnNames&quot;</span>&gt;</span><span class="tag">&lt;/<span class="name">tr</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">table</span>&gt;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>首先，在 resultList中 检查 searchResult 是否存在和对象。然后，使用 columnData 映射的数据源创建表。表头行设置为 &lt;tr mat-header-row *matHeaderRowDef&#x3D;”columnNames”&gt;</tr> 以包含columnNames。表的行和列是用 &lt;tr mat-row *matRowDef&#x3D;”let row;列:columnNames “ &gt; &lt; &#x2F; tr &gt;。</p>
+<ul>
+<li>单元格是通过迭代 columnname 来创建的: &lt;ng-container *ngFor&#x3D;”let disCol of columnNames” matColumnDef&#x3D;”“&gt;。</li>
+<li>标题单元格创建: &lt;th mat-header-cell *matHeaderCellDef&gt;</th>。</li>
+</ul>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p>在 LLM 的帮助下质疑数据库需要对元数据进行一些努力，并且对数据库包含的内容有一个粗略的了解。AI&#x2F;LLM 不适合创建查询，因为 SQL 查询需要正确性。需要一个相当大的模型来获得所需的查询正确性，并且需要 GPU 加速才能进行生产性使用。</p>
+<p>设计良好的 UI，用户可以在其中拖放结果表中的表列，这可能是满足要求的不错选择。Angular Material Components 很好地支持拖放。</p>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://yangyulely.github.io">总攻杨零壹</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://yangyulely.github.io/2024/06/21/springai-llm-database/">https://yangyulely.github.io/2024/06/21/springai-llm-database/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 <a href="https://yangyulely.github.io" target="_blank">总攻杨零壹</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/Java/">Java</a><a class="post-meta__tags" href="/tags/LLM/">LLM</a><a class="post-meta__tags" href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a></div><div class="post_share"><div class="social-share" data-image="/img/spring-ai.jpg" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.3/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.3/sharejs/dist/js/social-share.min.js" defer></script></div></div><div class="post-reward"><div class="reward-button"><i class="fas fa-qrcode"></i>赞助</div><div class="reward-main"><ul class="reward-all"><li class="reward-item"><a href="/img/wechat.jpg" target="_blank"><img class="post-qr-code-img" src="/img/wechat.jpg" alt="微信"/></a><div class="post-qr-code-desc">微信</div></li><li class="reward-item"><a href="/img/alipay.jpg" target="_blank"><img class="post-qr-code-img" src="/img/alipay.jpg" alt="支付宝"/></a><div class="post-qr-code-desc">支付宝</div></li></ul></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-full"><a href="/2024/06/22/k8s-nginx/" title="k8s安装nginx Ingress超详细指南"><img class="cover" src="/img/k8s-nginx/header.jpg" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">上一篇</div><div class="prev_info">k8s安装nginx Ingress超详细指南</div></div></a></div></nav></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src="/img/me.jpg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">总攻杨零壹</div><div class="author-info__description"></div></div><div class="card-info-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">4</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">9</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">3</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/yangyulely"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons is-center"><a class="social-icon" href="https://github.com/yangyulely" target="_blank" title="Github"><i class="fab fa-github"></i></a><a class="social-icon" href="https://blog.csdn.net/yugongpeng?spm=1011.2415.3001.5343" target="_blank" title="CSDN"><i class="fa fa-book-open"></i></a><a class="social-icon" href="tencent://AddContact/?fromId=45&amp;fromSubId=1&amp;subcmd=all&amp;uin=939985605&amp;website=www.oicqzone.com" target="_blank" title="QQ"><i class="fab fa-qq"></i></a><a class="social-icon" href="mailto:yuleyang9024@gmail.com" target="_blank" title="Email"><i class="fas fa-envelope-open-text"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">欢迎来到总攻杨零壹的博客！</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%BD%BF%E7%94%A8Spring-AI-%E5%92%8C-LLM-%E5%AE%9E%E7%8E%B0%E6%95%B0%E6%8D%AE%E5%BA%93%E6%9F%A5%E8%AF%A2"><span class="toc-number">1.</span> <span class="toc-text">使用Spring AI 和 LLM 实现数据库查询</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%95%B0%E6%8D%AE%E9%9B%86%E5%92%8C%E5%85%83%E6%95%B0%E6%8D%AE"><span class="toc-number">1.0.1.</span> <span class="toc-text">数据集和元数据</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%B5%8C%E5%85%A5"><span class="toc-number">1.0.2.</span> <span class="toc-text">嵌入</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%AE%9E%E7%8E%B0%E6%90%9C%E7%B4%A2"><span class="toc-number">1.0.3.</span> <span class="toc-text">实现搜索</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%A3%80%E7%B4%A2%E5%B5%8C%E5%85%A5"><span class="toc-number">1.0.3.1.</span> <span class="toc-text">检索嵌入</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%88%9B%E5%BB%BA%E6%8F%90%E7%A4%BA%E8%AF%8D"><span class="toc-number">1.0.3.2.</span> <span class="toc-text">创建提示词</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%89%A7%E8%A1%8C%E6%9F%A5%E8%AF%A2%E5%B9%B6%E8%BF%94%E5%9B%9E%E7%BB%93%E6%9E%9C"><span class="toc-number">1.0.3.3.</span> <span class="toc-text">执行查询并返回结果</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%B1%95%E7%A4%BA"><span class="toc-number">1.0.4.</span> <span class="toc-text">展示</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%90%8E%E7%AB%AF"><span class="toc-number">1.0.4.1.</span> <span class="toc-text">后端</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%89%8D%E7%AB%AF"><span class="toc-number">1.0.4.2.</span> <span class="toc-text">前端</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%80%BB%E7%BB%93"><span class="toc-number">1.0.5.</span> <span class="toc-text">总结</span></a></li></ol></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/2024/06/22/mlops/" title="MLOps 体系结构模型"><img src="/img/mlops/header.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="MLOps 体系结构模型"/></a><div class="content"><a class="title" href="/2024/06/22/mlops/" title="MLOps 体系结构模型">MLOps 体系结构模型</a><time datetime="2024-06-22T11:52:08.000Z" title="发表于 2024-06-22 19:52:08">2024-06-22</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2024/06/22/trivy-docker-scan/" title="使用 Trivy 扫描 Docker 镜像漏洞详细指南"><img src="/img/trivy-docker/header.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="使用 Trivy 扫描 Docker 镜像漏洞详细指南"/></a><div class="content"><a class="title" href="/2024/06/22/trivy-docker-scan/" title="使用 Trivy 扫描 Docker 镜像漏洞详细指南">使用 Trivy 扫描 Docker 镜像漏洞详细指南</a><time datetime="2024-06-22T11:36:07.000Z" title="发表于 2024-06-22 19:36:07">2024-06-22</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2024/06/22/k8s-nginx/" title="k8s安装nginx Ingress超详细指南"><img src="/img/k8s-nginx/header.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="k8s安装nginx Ingress超详细指南"/></a><div class="content"><a class="title" href="/2024/06/22/k8s-nginx/" title="k8s安装nginx Ingress超详细指南">k8s安装nginx Ingress超详细指南</a><time datetime="2024-06-22T00:39:52.000Z" title="发表于 2024-06-22 08:39:52">2024-06-22</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2024/06/21/springai-llm-database/" title="使用Spring AI 和 LLM 实现数据库查询"><img src="/img/spring-ai.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="使用Spring AI 和 LLM 实现数据库查询"/></a><div class="content"><a class="title" href="/2024/06/21/springai-llm-database/" title="使用Spring AI 和 LLM 实现数据库查询">使用Spring AI 和 LLM 实现数据库查询</a><time datetime="2024-06-21T15:43:21.000Z" title="发表于 2024-06-21 23:43:21">2024-06-21</time></div></div></div></div></div></div></main><footer id="footer" style="background-image: url('/img/footer.png')"><div id="footer-wrap"><div class="copyright">&copy;2020 - 2024 By 总攻杨零壹</div><div class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="translateLink" type="button" title="简繁转换">繁</button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js?v=4.14.0-b3"></script><script src="/js/main.js?v=4.14.0-b3"></script><script src="/js/tw_cn.js?v=4.14.0-b3"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0.35/dist/fancybox/fancybox.umd.min.js"></script><div class="js-pjax"><script>(() => {
+  const runMermaid = (ele) => {
+    window.loadMermaid = true
+    const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default'
+
+    Array.from(ele).forEach((item, index) => {
+      const mermaidSrc = item.firstElementChild
+      const mermaidThemeConfig = '%%{init:{ \'theme\':\'' + theme + '\'}}%%\n'
+      const mermaidID = 'mermaid-' + index
+      const mermaidDefinition = mermaidThemeConfig + mermaidSrc.textContent
+
+      const renderFn = mermaid.render(mermaidID, mermaidDefinition)
+
+      const renderV10 = () => {
+        renderFn.then(({svg}) => {
+          mermaidSrc.insertAdjacentHTML('afterend', svg)
+        })
+      }
+
+      const renderV9 = svg => {
+        mermaidSrc.insertAdjacentHTML('afterend', svg)
+      }
+
+      typeof renderFn === 'string' ? renderV9(renderFn) : renderV10()
+    })
+  }
+
+  const codeToMermaid = () => {
+    const codeMermaidEle = document.querySelectorAll('pre > code.mermaid')
+    if (codeMermaidEle.length === 0) return
+    
+    codeMermaidEle.forEach(ele => {
+      const newEle = document.createElement('div')
+      newEle.className = 'mermaid-wrap'
+      newEle.innerHTML = `<pre class="mermaid-src" hidden>${ele.textContent}</pre>`
+      ele.parentNode.replaceWith(newEle)
+    })
+  }
+
+  const loadMermaid = () => {
+    if (false) codeToMermaid()
+    const $mermaid = document.querySelectorAll('#article-container .mermaid-wrap')
+    if ($mermaid.length === 0) return
+
+    const runMermaidFn = () => runMermaid($mermaid)
+    btf.addGlobalFn('themeChange', runMermaidFn, 'mermaid')
+    window.loadMermaid ? runMermaidFn() : btf.getScript('https://cdn.jsdelivr.net/npm/mermaid@10.9.0/dist/mermaid.min.js').then(runMermaidFn)
+  }
+  
+  btf.addGlobalFn('encrypt', loadMermaid, 'mermaid')
+  window.pjax ? loadMermaid() : document.addEventListener('DOMContentLoaded', loadMermaid)
+})()</script></div><script id="click-heart" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.3/dist/click-heart.min.js" async="async" mobile="false"></script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">搜索</span><span id="loading-status"></span><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="is-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  数据库加载中</span></div><div class="search-wrap"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="搜索文章" type="text"/></div></div><hr/><div id="local-search-results"></div><div id="local-search-stats-wrap"></div></div></div><div id="search-mask"></div><script src="/js/search/local-search.js?v=4.14.0-b3"></script></div></div></body></html>
